@@ -2,7 +2,20 @@
 
 Drop-in prompt-injection / jailbreak / OWASP-LLM-Top-10 input guards for AI agents.
 
-Wraps the classifier published at [`dannyliv/agent-guard-modernbert-base`](https://huggingface.co/dannyliv/agent-guard-modernbert-base) and exposes ready-to-use middleware for:
+## The problem
+
+AI agents are now wired into email, browsers, terminals, code execution, and corporate data. Every input path is an attack surface. Prompt injection sits at #1 on the [OWASP LLM Top 10 (2025)](https://genai.owasp.org/llm-top-10/). Real 2024-2026 compromises (Clinejection npm supply-chain attack, ChatGPT memory injection, MCP tool-description poisoning, Claude Computer Use → C2 implant) show this is in production. Agent Guard is a thin pre-LLM filter that closes that gap.
+
+## Wraps these models
+
+| Model | Best for | Adapter size | Max tokens |
+|---|---|---:|---:|
+| [`dannyliv/agent-guard-deberta-pi-base`](https://huggingface.co/dannyliv/agent-guard-deberta-pi-base) | best raw F1 (#1 on JailbreakBench held-out: 0.727) | 6.9 MB | 512 |
+| [`dannyliv/agent-guard-modernbert-base`](https://huggingface.co/dannyliv/agent-guard-modernbert-base) | long-context, balanced | 9.3 MB | 8,192 (trained at 1,024) |
+
+Override with `AGENT_GUARD_MODEL` env var. Default is the ModernBERT sister.
+
+## Ready-to-use middleware
 
 - **Claude** (Anthropic SDK)
 - **OpenAI / Codex** (OpenAI SDK + Codex CLI)
@@ -10,6 +23,11 @@ Wraps the classifier published at [`dannyliv/agent-guard-modernbert-base`](https
 - **OpenCLAW** (pre-action skill hook)
 
 Plus a local Flask dashboard that visualizes every guarded input as a SQLite-backed feed.
+
+## Hardware
+
+- **CPU inference:** ~700 MB RAM, **18 ms** per call via ONNX (50-150 ms via PyTorch). Runs on a laptop or a $5 VPS.
+- **GPU inference:** < 1 GB VRAM in bf16; sub-millisecond per call when batched.
 
 ## Install
 
