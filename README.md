@@ -31,12 +31,25 @@ Plus a local Flask dashboard that visualizes every guarded input as a SQLite-bac
 
 ## Install
 
+Once this repo is public, install directly from git (no PyPI account required on either side):
+
+```bash
+pip install git+https://github.com/dannyliv/agent-guard-plugins.git
+pip install "agent-guard-plugins[all] @ git+https://github.com/dannyliv/agent-guard-plugins.git"
+pip install "agent-guard-plugins[claude] @ git+https://github.com/dannyliv/agent-guard-plugins.git"
+pip install "agent-guard-plugins[onnx]  @ git+https://github.com/dannyliv/agent-guard-plugins.git"
+```
+
+Once published to PyPI, the shorter forms work too:
+
 ```bash
 pip install "agent-guard-plugins[all]"          # everything
 pip install "agent-guard-plugins[claude]"       # Claude wrapper only
 pip install "agent-guard-plugins[openai]"       # OpenAI / Codex wrapper only
 pip install "agent-guard-plugins[onnx]"         # fastest CPU inference (18ms vs 50-150ms)
 ```
+
+PyPI publishing is staged via Trusted Publishing (no API token, GitHub Actions OIDC); see release notes in `pyproject.toml` for the workflow.
 
 ## 30-second quickstart
 
