@@ -68,8 +68,13 @@ _model_lock = threading.Lock()
 _state: dict = {}
 
 
-def _load(base=DEFAULT_BASE, adapter=DEFAULT_ADAPTER):
-    """Lazy single-load, thread-safe."""
+def _load(base=None, adapter=None):
+    """Lazy single-load, thread-safe. Reads AGENT_GUARD_BASE / AGENT_GUARD_MODEL
+    env vars at first call (deferred to support setting env after import)."""
+    if base is None:
+        base = os.environ.get("AGENT_GUARD_BASE", DEFAULT_BASE)
+    if adapter is None:
+        adapter = os.environ.get("AGENT_GUARD_MODEL", DEFAULT_ADAPTER)
     with _model_lock:
         if "model" in _state:
             return _state
@@ -87,7 +92,8 @@ def _load(base=DEFAULT_BASE, adapter=DEFAULT_ADAPTER):
             problem_type="multi_label_classification",
             ignore_mismatched_sizes=True, **extra,
         )
-        model = PeftModel.from_pretrained(model, adapter)
+        token = os.environ.get("HF_TOKEN")
+        model = PeftModel.from_pretrained(model, adapter, token=token)
         model.eval()
         if torch.backends.mps.is_available():
             model = model.to("mps")
@@ -97,6 +103,7 @@ def _load(base=DEFAULT_BASE, adapter=DEFAULT_ADAPTER):
         _state["model"] = model
         _state["tok"] = tok
         _state["torch"] = torch
+        _state["adapter"] = adapter
         return _state
 
 
@@ -142,7 +149,8 @@ def guard(text: str, *, threshold: float = DEFAULT_THRESHOLD,
     flagged = is_inj > threshold
     owasp = [OWASP[i] for i in range(len(OWASP)) if probs[1 + i] > threshold]
     atlas = [ATLAS[i] for i in range(len(ATLAS)) if probs[1 + len(OWASP) + i] > threshold]
-    result = GuardResult(flagged, float(is_inj), threshold, owasp, atlas, lat_ms, DEFAULT_ADAPTER)
+    result = GuardResult(flagged, float(is_inj), threshold, owasp, atlas, lat_ms,
+                         st.get("adapter", DEFAULT_ADAPTER))
     if log:
         _log_detection(text, result, source)
     return result
