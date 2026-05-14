@@ -6,14 +6,16 @@ Drop-in prompt-injection / jailbreak / OWASP-LLM-Top-10 input guards for AI agen
 
 AI agents are now wired into email, browsers, terminals, code execution, and corporate data. Every input path is an attack surface. Prompt injection sits at #1 on the [OWASP LLM Top 10 (2025)](https://genai.owasp.org/llm-top-10/). Real 2024-2026 compromises (Clinejection npm supply-chain attack, ChatGPT memory injection, MCP tool-description poisoning, Claude Computer Use → C2 implant) show this is in production. Agent Guard is a thin pre-LLM filter that closes that gap.
 
-## Wraps these models
+## Pick a model
 
-| Model | Best for | Adapter size | Max tokens |
-|---|---|---:|---:|
-| [`dannyliv/agent-guard-deberta-pi-base`](https://huggingface.co/dannyliv/agent-guard-deberta-pi-base) | best raw F1 (#1 on JailbreakBench held-out: 0.727) | 6.9 MB | 512 |
-| [`dannyliv/agent-guard-modernbert-base`](https://huggingface.co/dannyliv/agent-guard-modernbert-base) | long-context, balanced | 9.3 MB | 8,192 (trained at 1,024) |
+Two interchangeable LoRA classifiers ship with the plugin. Install only the one you want, or install both to A/B them.
 
-Override with `AGENT_GUARD_MODEL` env var. Default is the ModernBERT sister.
+| Model | Strength | Base | Tokenizer dep | Max tokens | Adapter | License |
+|---|---|---|---|---:|---:|---|
+| [`dannyliv/agent-guard-modernbert-base`](https://huggingface.co/dannyliv/agent-guard-modernbert-base) | long-context inputs, balanced precision and recall | ModernBERT-base (149M) | none (ships with `transformers`) | 8,192 (trained at 1,024) | 9.3 MB | Apache-2.0 |
+| [`dannyliv/agent-guard-deberta-pi-base`](https://huggingface.co/dannyliv/agent-guard-deberta-pi-base) | best raw F1 on JailbreakBench held-out (0.727), top of the public leaderboard | DeBERTa-v3-base (184M, ProtectAI PI-tuned) | `sentencepiece` | 512 | 6.9 MB | Apache-2.0 |
+
+Rule of thumb. Short user messages, precision matters: DeBERTa. Long documents, tool outputs, or RAG chunks: ModernBERT.
 
 ## Ready-to-use middleware
 
@@ -31,25 +33,64 @@ Plus a local Flask dashboard that visualizes every guarded input as a SQLite-bac
 
 ## Install
 
-Once this repo is public, install directly from git (no PyPI account required on either side):
+### Option A. ModernBERT (default, long-context)
 
 ```bash
-pip install git+https://github.com/dannyliv/agent-guard-plugins.git
-pip install "agent-guard-plugins[all] @ git+https://github.com/dannyliv/agent-guard-plugins.git"
-pip install "agent-guard-plugins[claude] @ git+https://github.com/dannyliv/agent-guard-plugins.git"
-pip install "agent-guard-plugins[onnx]  @ git+https://github.com/dannyliv/agent-guard-plugins.git"
+pip install "agent-guard-plugins[modernbert]"
 ```
 
-Once published to PyPI, the shorter forms work too:
+No further setup. First `guard()` call downloads the 149M base + 9 MB LoRA from Hugging Face (~30 s cold). Subsequent calls reuse the local cache.
+
+### Option B. DeBERTa-v3 (highest F1, short inputs)
 
 ```bash
-pip install "agent-guard-plugins[all]"          # everything
-pip install "agent-guard-plugins[claude]"       # Claude wrapper only
-pip install "agent-guard-plugins[openai]"       # OpenAI / Codex wrapper only
-pip install "agent-guard-plugins[onnx]"         # fastest CPU inference (18ms vs 50-150ms)
+pip install "agent-guard-plugins[deberta]"
 ```
 
-PyPI publishing is staged via Trusted Publishing (no API token, GitHub Actions OIDC); see release notes in `pyproject.toml` for the workflow.
+Then point the runtime at the DeBERTa adapter:
+
+```bash
+export AGENT_GUARD_BASE=protectai/deberta-v3-base-prompt-injection-v2
+export AGENT_GUARD_MODEL=dannyliv/agent-guard-deberta-pi-base
+```
+
+Or set them in your process before importing the package. The `[deberta]` extra adds `sentencepiece`, which the DeBERTa-v3 tokenizer needs.
+
+### Stack the integrations you use
+
+The model extras compose with the platform extras. Pick one model, then add any wrappers you need:
+
+```bash
+pip install "agent-guard-plugins[modernbert,claude]"        # Claude middleware
+pip install "agent-guard-plugins[deberta,openai]"           # OpenAI / Codex middleware
+pip install "agent-guard-plugins[modernbert,onnx]"          # 18 ms CPU inference
+pip install "agent-guard-plugins[modernbert,dashboard]"     # local Flask viewer
+pip install "agent-guard-plugins[all]"                      # everything, both models
+```
+
+### From source (contributors)
+
+```bash
+git clone https://github.com/dannyliv/agent-guard-plugins.git
+cd agent-guard-plugins
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[modernbert,claude,openai,dashboard,onnx]"
+pytest
+```
+
+Swap `modernbert` for `deberta` if you are developing against the DeBERTa adapter.
+
+### Pre-download model weights (optional)
+
+To avoid the cold-start download on first inference, pull the weights ahead of time:
+
+```bash
+huggingface-cli download answerdotai/ModernBERT-base
+huggingface-cli download dannyliv/agent-guard-modernbert-base
+# or, for DeBERTa
+huggingface-cli download protectai/deberta-v3-base-prompt-injection-v2
+huggingface-cli download dannyliv/agent-guard-deberta-pi-base
+```
 
 ## 30-second quickstart
 
@@ -124,17 +165,23 @@ Every `guard()` call logs to `~/.agent-guard/detections.sqlite` and the dashboar
 | Env var | Default | Description |
 |---|---|---|
 | `AGENT_GUARD_THRESHOLD` | `0.4` | Probability above which an input is flagged. Tune for FP / FN trade-off (best F1 on held-out JBB is t=0.55). |
-| `AGENT_GUARD_MODEL` | `dannyliv/agent-guard-modernbert-base` | HF repo of the LoRA adapter. |
+| `AGENT_GUARD_MODEL` | `dannyliv/agent-guard-modernbert-base` | HF repo of the LoRA adapter. Set to `dannyliv/agent-guard-deberta-pi-base` for DeBERTa. |
+| `AGENT_GUARD_BASE` | `answerdotai/ModernBERT-base` | HF repo of the base model. Set to `protectai/deberta-v3-base-prompt-injection-v2` when using the DeBERTa adapter. |
 | `AGENT_GUARD_LOG_PATH` | `~/.agent-guard/detections.sqlite` | SQLite log target. Set empty string to disable. |
-| `AGENT_GUARD_USE_ONNX` | `0` | Set to `1` to load the ONNX export instead of the PyTorch LoRA (faster CPU inference). |
+| `AGENT_GUARD_USE_ONNX` | `0` | Set to `1` to load the ONNX export instead of the PyTorch LoRA (faster CPU inference, ModernBERT only). |
 
 ## Model attribution
 
-The underlying classifier:
+ModernBERT classifier:
 - **Base:** [`answerdotai/ModernBERT-base`](https://huggingface.co/answerdotai/ModernBERT-base) (149M params, Apache-2.0)
 - **LoRA adapter:** [`dannyliv/agent-guard-modernbert-base`](https://huggingface.co/dannyliv/agent-guard-modernbert-base) (Apache-2.0, ~9MB)
 - **ONNX export:** same repo, `onnx/model.onnx` (Apache-2.0)
-- **Training pipeline / dataset details:** see model card on Hugging Face
+
+DeBERTa classifier:
+- **Base:** [`protectai/deberta-v3-base-prompt-injection-v2`](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2) (184M params, Apache-2.0)
+- **LoRA adapter:** [`dannyliv/agent-guard-deberta-pi-base`](https://huggingface.co/dannyliv/agent-guard-deberta-pi-base) (Apache-2.0, ~7MB)
+
+Training pipeline and dataset details live on each Hugging Face model card.
 
 ## License
 
