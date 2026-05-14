@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-guard-plugins"
-version = "0.1.0"
-description = "Drop-in prompt-injection guards for Claude, OpenAI Codex, Hermes, and OpenCLAW agents. Uses dannyliv/agent-guard-modernbert-base on Hugging Face."
+version = "0.1.1"
+description = "Drop-in prompt-injection guards for Claude, OpenAI Codex, Hermes, and OpenCLAW agents. Wraps the agent-guard-modernbert-base and agent-guard-deberta-pi-base classifiers on Hugging Face."
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [{name = "dannyliv"}]
@@ -24,11 +24,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Pick one of the two classifier models. Each extra pulls only the deps
+# that model needs. Install both together if you want to A/B them.
+modernbert = []  # ModernBERT tokenizer ships with transformers, no extra dep.
+deberta = ["sentencepiece>=0.1.99"]  # DeBERTa-v3 uses a SentencePiece tokenizer.
+
+# Platform integrations.
 onnx = ["onnxruntime>=1.16", "optimum[onnxruntime]>=1.20"]
 claude = ["anthropic>=0.30"]
 openai = ["openai>=1.40"]
 dashboard = ["flask>=3.0"]
-all = ["onnxruntime>=1.16", "optimum[onnxruntime]>=1.20", "anthropic>=0.30", "openai>=1.40", "flask>=3.0"]
+all = [
+    "sentencepiece>=0.1.99",
+    "onnxruntime>=1.16",
+    "optimum[onnxruntime]>=1.20",
+    "anthropic>=0.30",
+    "openai>=1.40",
+    "flask>=3.0",
+]
 
 [project.urls]
 Models = "https://huggingface.co/dannyliv/agent-guard-modernbert-base"
