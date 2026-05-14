@@ -1,8 +1,10 @@
-"""Generic wrapper for Hermes (or any local HF causal LM).
+"""Generic wrapper for Hermes (Nous Research) or any local HF causal LM.
 
-Hermes models are vendor-acknowledged "reduced-refusal" — they need an external
+Hermes models are vendor-acknowledged "reduced-refusal" models. They need an external
 guard more than frontier closed models. Front-load every user prompt through
 Agent Guard before the model sees it.
+
+Hermes is from Nous Research (https://nousresearch.com), MIT license.
 
 Usage:
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -15,6 +17,7 @@ Usage:
     print(out.text, out.guard.reason())
 """
 from __future__ import annotations
+import warnings
 from dataclasses import dataclass
 from ..core import guard, GuardResult
 
@@ -33,6 +36,17 @@ class GuardedChatModel:
         self.threshold, self.refusal = threshold, refusal_text
 
     def generate(self, prompt: str, max_new_tokens: int = 256, **kw) -> ChatOutput:
+        if kw.get("stream", False):
+            raise NotImplementedError(
+                "agent-guard-plugins does not support streaming in v0.1. "
+                "Disable streaming or call core.guard() manually on each piece of content."
+            )
+        if not isinstance(prompt, str):
+            warnings.warn(
+                "Non-text content was not classified by Agent Guard.",
+                stacklevel=2,
+            )
+            prompt = str(prompt)
         r = guard(prompt, threshold=self.threshold, source="hermes_wrapper")
         if r.flagged:
             return ChatOutput(self.refusal, True, r)
