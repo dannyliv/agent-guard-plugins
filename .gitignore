@@ -1,5 +1,8 @@
 __pycache__/
 *.pyc
+*.pt
+*.safetensors
+*.bin
 *.egg-info/
 build/
 dist/

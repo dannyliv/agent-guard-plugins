@@ -64,6 +64,8 @@ class GuardResult:
         return ";".join(parts)
 
 
+# Serializes concurrent writes; avoids corruption under multithreaded use.
+_db_lock = threading.Lock()
 _model_lock = threading.Lock()
 _state: dict = {}
 
@@ -125,14 +127,15 @@ def _logdb(path: pathlib.Path = DEFAULT_LOG_PATH) -> sqlite3.Connection:
 
 def _log_detection(text: str, r: GuardResult, source: str):
     try:
-        conn = _logdb()
-        conn.execute(
-            "INSERT INTO detections VALUES (?,?,?,?,?,?,?,?)",
-            (time.time(), text[:8000], int(r.flagged), r.is_injection_prob,
-             ",".join(r.owasp), ",".join(r.atlas), r.latency_ms, source),
-        )
-        conn.commit()
-        conn.close()
+        with _db_lock:
+            conn = _logdb()
+            conn.execute(
+                "INSERT INTO detections VALUES (?,?,?,?,?,?,?,?)",
+                (time.time(), text[:8000], int(r.flagged), r.is_injection_prob,
+                 ",".join(r.owasp), ",".join(r.atlas), r.latency_ms, source),
+            )
+            conn.commit()
+            conn.close()
     except Exception as e:
         logger.warning("log failed: %s", e)
 

@@ -71,9 +71,12 @@ th { background: #fafafa; }
 </body></html>"""
 
 
+# Dashboard is for local development only. Do not expose to untrusted networks.
 def _build_app():
     from flask import Flask, jsonify, render_template_string
     app = Flask(__name__)
+    # Flask enables autoescape for .html templates by default; render_template_string
+    # also autoescapes by default in Flask >= 2.2. Confirmed: do not set autoescape=False.
 
     def fmt(ts):
         return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
@@ -122,7 +125,16 @@ def main():
     parser = argparse.ArgumentParser(description="Agent Guard detection dashboard")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=5174, type=int)
+    parser.add_argument("--allow-remote", action="store_true",
+                        help="Required to bind to a non-localhost address.")
     args = parser.parse_args()
+    if args.host not in ("127.0.0.1", "localhost") and not args.allow_remote:
+        print(
+            f"WARNING: --host {args.host!r} is not localhost. "
+            "The dashboard is designed for local use only. "
+            "Pass --allow-remote to proceed anyway."
+        )
+        raise SystemExit(1)
     app = _build_app()
     print(f"agent-guard dashboard at http://{args.host}:{args.port}")
     app.run(host=args.host, port=args.port, debug=False)

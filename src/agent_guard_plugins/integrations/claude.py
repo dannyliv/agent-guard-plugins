@@ -15,6 +15,7 @@ Returns the same shape as `client.messages.create()`. If blocked, returns a
 synthetic refusal response with `.agent_guard` attached.
 """
 from __future__ import annotations
+import warnings
 from typing import Callable
 from ..core import guard, GuardResult
 
@@ -26,14 +27,31 @@ def guarded_messages_create(
     refusal_text: str = "I can't help with that request.",
     **create_kwargs,
 ):
+    if create_kwargs.get("stream", False):
+        raise NotImplementedError(
+            "agent-guard-plugins does not support streaming in v0.1. "
+            "Disable streaming or call core.guard() manually on each piece of content."
+        )
     msgs = create_kwargs.get("messages", [])
     for msg in msgs:
         if msg.get("role") != "user":
             continue
         content = msg.get("content", "")
-        text = content if isinstance(content, str) else " ".join(
-            c.get("text", "") for c in content if isinstance(c, dict)
-        )
+        if isinstance(content, str):
+            text = content
+        else:
+            text_parts = []
+            for c in content:
+                if not isinstance(c, dict):
+                    continue
+                if c.get("type") == "text":
+                    text_parts.append(c.get("text", ""))
+                else:
+                    warnings.warn(
+                        "Non-text content was not classified by Agent Guard.",
+                        stacklevel=2,
+                    )
+            text = " ".join(text_parts)
         result = guard(text, threshold=block_threshold, source="claude_middleware")
         if result.flagged:
             if on_detection:
