@@ -14,6 +14,7 @@ Usage:
     )
 """
 from __future__ import annotations
+import warnings
 from typing import Callable
 from ..core import guard, GuardResult
 
@@ -25,12 +26,32 @@ def guarded_chat_completions_create(
     refusal_text: str = "I can't help with that request.",
     **create_kwargs,
 ):
+    if create_kwargs.get("stream", False):
+        raise NotImplementedError(
+            "agent-guard-plugins does not support streaming in v0.1. "
+            "Disable streaming or call core.guard() manually on each piece of content."
+        )
     msgs = create_kwargs.get("messages", [])
     for msg in msgs:
         if msg.get("role") != "user":
             continue
-        text = msg.get("content", "")
-        if not isinstance(text, str):
+        content = msg.get("content", "")
+        if isinstance(content, str):
+            text = content
+        elif isinstance(content, list):
+            text_parts = []
+            for part in content:
+                if not isinstance(part, dict):
+                    continue
+                if part.get("type") == "text":
+                    text_parts.append(part.get("text", ""))
+                else:
+                    warnings.warn(
+                        "Non-text content was not classified by Agent Guard.",
+                        stacklevel=2,
+                    )
+            text = " ".join(text_parts)
+        else:
             continue
         result = guard(text, threshold=block_threshold, source="openai_codex_middleware")
         if result.flagged:
