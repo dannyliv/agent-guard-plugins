@@ -1,0 +1,7 @@
+collecting ... collected 32 items / 27 deselected / 5 selected
+tests/test_e2e_claude.py::test_claude_real_inference_path PASSED         [ 20%]
+tests/test_e2e_codex.py::test_codex_preexec_decisions PASSED             [ 40%]
+tests/test_e2e_codex.py::test_codex_wrapper_blocks_before_real_binary PASSED [ 60%]
+tests/test_e2e_hermes.py::test_hermes_real_model_result PASSED           [ 80%]
+tests/test_e2e_openclaw.py::test_openclaw_real_plugin_hook PASSED        [100%]
+================ 5 passed, 27 deselected, 14 warnings in 19.72s ================

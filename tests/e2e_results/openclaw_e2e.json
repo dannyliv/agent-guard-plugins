@@ -1,0 +1,20 @@
+{
+  "platform": "OpenCLAW",
+  "tests": [
+    {
+      "name": "benign tool call proceeds",
+      "passed": true,
+      "hook_result": null
+    },
+    {
+      "name": "injection tool call blocked",
+      "passed": true,
+      "hook_result": {
+        "block": true,
+        "blockReason": "agent-guard blocked: owasp=LLM01_direct,LLM01_indirect,LLM06,LLM07;atlas=AML_T0051_000"
+      }
+    }
+  ],
+  "passed": true,
+  "summary": "OPENCLAW REAL E2E: PASS"
+}
