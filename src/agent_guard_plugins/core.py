@@ -85,13 +85,19 @@ def _load(base=None, adapter=None):
         tok = AutoTokenizer.from_pretrained(base)
         extra = {}
         if "modernbert" in base.lower():
+            # `attn_implementation` is a valid from_pretrained kwarg on every
+            # supported transformers version. `reference_compile` is a
+            # ModernBERT *config* field, not a model __init__ argument:
+            # transformers 5.x rejects it as a kwarg. Set it on the config
+            # object instead so it works on both 4.x and 5.x.
             extra["attn_implementation"] = "eager"
-            extra["reference_compile"] = False
         model = AutoModelForSequenceClassification.from_pretrained(
             base, num_labels=len(LABELS),
             problem_type="multi_label_classification",
             ignore_mismatched_sizes=True, **extra,
         )
+        if "modernbert" in base.lower() and hasattr(model.config, "reference_compile"):
+            model.config.reference_compile = False
         token = os.environ.get("HF_TOKEN")
         model = PeftModel.from_pretrained(model, adapter, token=token)
         model.eval()
