@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Real Codex pre-exec wrapper.
+#
+# This is the integration pattern documented in
+# agent_guard_plugins.integrations.openai_codex.codex_preexec: a wrapper that
+# runs the user's prompt through agent-guard BEFORE handing it to the real
+# `codex` binary. If agent-guard blocks, `codex` is never invoked -- the model
+# call never happens.
+#
+# Env:
+#   AGENT_GUARD_PYTHON  python with agent_guard_plugins installed
+#   CODEX_BIN           path to the real codex binary
+set -euo pipefail
+
+GUARD_PYTHON="${AGENT_GUARD_PYTHON:-python3}"
+CODEX_BIN="${CODEX_BIN:-codex}"
+PROMPT="${1:-}"
+
+# Pre-exec gate: codex_preexec returns "ALLOW" or "BLOCK <reason>".
+VERDICT="$(
+  "$GUARD_PYTHON" -c '
+import sys
+from agent_guard_plugins.integrations.openai_codex import codex_preexec
+allow, reason = codex_preexec(sys.argv[1])
+print("ALLOW" if allow else "BLOCK " + reason)
+' "$PROMPT"
+)"
+
+if [[ "$VERDICT" == BLOCK* ]]; then
+  echo "agent-guard blocked: ${VERDICT#BLOCK }" >&2
+  exit 1
+fi
+
+# Allowed -> hand off to the real Codex CLI (model call happens here).
+exec "$CODEX_BIN" exec "$PROMPT"
