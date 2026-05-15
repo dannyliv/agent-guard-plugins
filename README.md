@@ -170,6 +170,67 @@ Every `guard()` call logs to `~/.agent-guard/detections.sqlite` and the dashboar
 | `AGENT_GUARD_LOG_PATH` | `~/.agent-guard/detections.sqlite` | SQLite log target. Set empty string to disable. |
 | `AGENT_GUARD_USE_ONNX` | `0` | Set to `1` to load the ONNX export instead of the PyTorch LoRA (faster CPU inference, ModernBERT only). |
 
+## Model Evaluation
+
+The plugin wraps two fine-tuned encoder classifiers for prompt-injection detection: ModernBERT-base (149M parameters, 8k-token context) and DeBERTa-v3-PI (184M parameters, 512-token context). Both are LoRA adapters trained on a ~37k-example attack mix. The numbers below come from held-out and in-distribution test sets evaluated on a RunPod A100 sweep (2026-05-14). Full methodology and reproduction steps live on the two Hugging Face model cards.
+
+### Headline: the two Agent Guard models on three PI benchmarks
+
+F1 at the canonical threshold 0.5 is the headline metric, the score you get with no per-deployment tuning. Benign FPR is the false-positive rate on `databricks/databricks-dolly-15k` benign instructions (n=500).
+
+| Model | Params | JBB-Behaviors F1@0.5 | deepset F1@0.5 | jackhhao F1@0.5 | Benign FPR @0.5 |
+|---|---:|---:|---:|---:|---:|
+| agent-guard-deberta-pi-base | 184M | 0.711 | 0.710 | 0.929 | 0.8% |
+| agent-guard-modernbert-base | 149M | 0.684 | 0.696 | 0.809 | 7.4% |
+
+JBB-Behaviors is the only true held-out set (never in training). The deepset and jackhhao test splits are distinct from the splits used in training, but the train splits of the same datasets are in the training mix, so read those two as in-distribution generalization.
+
+### Comparison vs LlamaGuard-3-8B
+
+Agent Guard DeBERTa against Meta's `meta-llama/Llama-Guard-3-8B`, the strongest gated safety classifier in the comparison.
+
+| Dataset | Agent Guard DeBERTa F1@0.5 | LlamaGuard-3-8B F1@0.5 | LG3 best F1 (tuned) | LG3 AUC |
+|---|---:|---:|---:|---:|
+| JBB-Behaviors | 0.711 | 0.000 | 0.717 @ t=0.05 | 0.950 |
+| deepset | 0.915 | 0.000 | 0.609 @ t=0.05 | 0.636 |
+| jackhhao | 0.938 | 0.000 | 0.620 @ t=0.05 | 0.638 |
+
+LG3 is a general harmful-content classifier (CSAM, weapons, hate). Its score distribution sits below 0.5 on PI inputs by default, so canonical-threshold F1 collapses to 0.000 on all three benchmarks. It also costs about 50x more compute per inference (8B parameters vs 184M). Read the comparison two ways: at canonical t=0.5, Agent Guard DeBERTa wins decisively for drop-in PI detection; with per-deployment tuning to t=0.05, LG3 reaches its best F1 of 0.717 on JBB-Behaviors, statistically tied with Agent Guard DeBERTa's tuned 0.727, and LG3 has higher threshold-free AUC on JBB (0.950 vs 0.704). On deepset and jackhhao, Agent Guard leads at every threshold.
+
+> The Agent Guard DeBERTa column shows F1@0.5 on the headline row above (0.711 / 0.710 / 0.929) and best-tuned F1 here (0.711 / 0.915 / 0.938). The 0.915 and 0.938 figures are the per-benchmark sweep optima, used here for an apples-to-apples comparison against LG3's tuned numbers.
+
+### Cross-classifier comparison
+
+Best F1 per benchmark, each model swept independently for its own optimal threshold. Top six by JBB-Behaviors F1.
+
+| Model | Params | JBB best-F1 | deepset best-F1 | jackhhao best-F1 |
+|---|---:|---:|---:|---:|
+| agent-guard-deberta-pi-base | 184M | 0.727 | 0.915 | 0.938 |
+| JasperLS/deberta-v3-base-injection | 184M | 0.701 | 0.992 | 0.709 |
+| agent-guard-modernbert-base | 149M | 0.697 | 0.806 | 0.811 |
+| fmops/distilbert-prompt-injection | 67M | 0.681 | 0.911 | 0.700 |
+| protectai/deberta-v3-base-prompt-injection-v2 | 184M | 0.000 | 0.554 | 0.915 |
+| protectai/deberta-v3-base-prompt-injection (v1) | 184M | 0.000 | 0.588 | 0.911 |
+
+Agent Guard DeBERTa is the highest-F1 classifier on JBB-Behaviors at canonical threshold 0.5 across the eleven PI and safety classifiers tested (nine ungated baselines, LlamaGuard-3-8B, plus its ModernBERT sister). The JBB gap to JasperLS (0.711 vs 0.701 at t=0.5) is 0.010, inside the 95% bootstrap CI for either model, so treat the ranking as indicative.
+
+### Threshold note
+
+F1@0.5 is the drop-in number: deploy with no tuning and this is the score. Best-tuned F1 sweeps each model independently for its own optimal threshold, the apples-to-apples comparison when every classifier is calibrated to its sweet spot. The two can diverge sharply for poorly-calibrated models (LG3 goes from 0.000 to 0.717).
+
+### Honest limitations
+
+- **White-box GCG adversarial attacks succeed.** A 200-prompt Greedy Coordinate Gradient evaluation against the DeBERTa model flipped 188 of 188 confidently-flagged prompts below threshold in a median of 2 iterations (Attack Success Rate 100%, see the DeBERTa model card). The attack assumes white-box access and produces visible nonsense-token suffixes, but treat Agent Guard as one layer of defense in depth, not a sole guardrail.
+- **ModernBERT has a high benign false-positive rate at the canonical threshold.** It flags 7.4% of benign instructions at t=0.5, roughly 1 in 14 legitimate requests. For low-FPR deployments use DeBERTa (0.8% at the same threshold) or threshold-tune ModernBERT against your own benign traffic.
+- **Out-of-distribution attack variants are not measured.** Multilingual injections, code-as-prompt attacks, and novel jailbreak families fall outside the English 2023-2025 training mix. Plan to retrain when your threat model shifts.
+
+### Links
+
+- ModernBERT model card: [`dannyliv/agent-guard-modernbert-base`](https://huggingface.co/dannyliv/agent-guard-modernbert-base)
+- DeBERTa model card: [`dannyliv/agent-guard-deberta-pi-base`](https://huggingface.co/dannyliv/agent-guard-deberta-pi-base)
+
+Full eval methodology, benchmark sizes, per-label breakdowns, and reproduction commands are in the two model cards.
+
 ## Model attribution
 
 ModernBERT classifier:
