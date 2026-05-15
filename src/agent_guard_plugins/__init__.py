@@ -5,5 +5,5 @@ Public API:
 """
 from .core import guard, guard_batch, GuardResult, LABELS, OWASP, ATLAS
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = ["guard", "guard_batch", "GuardResult", "LABELS", "OWASP", "ATLAS"]
