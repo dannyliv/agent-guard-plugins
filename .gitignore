@@ -9,3 +9,7 @@ dist/
 *.onnx
 .pytest_cache/
 .DS_Store
+
+# e2e harness symlinks into throwaway npm prefixes (created at run time)
+tests/e2e_results/openclaw_plugin/node_modules
+tests/e2e_results/codex_wrapper/node_modules

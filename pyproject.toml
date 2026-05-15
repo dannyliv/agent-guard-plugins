@@ -52,3 +52,10 @@ agent-guard-dashboard = "agent_guard_plugins.dashboard.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: exercises the real Hugging Face classifier (model download / load).",
+    "e2e: real end-to-end test against a live platform runtime (OpenCLAW, Claude, Codex, Hermes). Excluded from the default suite; needs the platform installed. See tests/test_e2e_*.py docstrings.",
+]
