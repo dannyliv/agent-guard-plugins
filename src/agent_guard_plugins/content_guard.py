@@ -39,6 +39,11 @@ import json
 import logging
 import pathlib
 from collections.abc import Callable
+
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib  # noqa: F401
 from dataclasses import dataclass, field
 from functools import wraps
 from typing import Any
@@ -161,8 +166,6 @@ class ContentGuardConfig:
             if path.suffix == ".json":
                 data = json.loads(text)
             else:
-                import tomllib
-
                 data = tomllib.loads(text)
         elif path.suffix == ".toml":
             # Fall back to a sibling .json if the .toml is missing.
