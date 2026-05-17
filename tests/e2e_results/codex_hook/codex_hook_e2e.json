@@ -1,0 +1,27 @@
+{
+  "platform": "OpenAI Codex CLI",
+  "integration": "PreToolUse hook",
+  "install": {
+    "hook_script_exists": true,
+    "hooks_json_valid": true,
+    "matcher": "*",
+    "hooks_json_path": "/var/folders/y8/77wmdd7157v_l_m_p0943fp00000gn/T/tmplpalep_f/.codex/hooks.json"
+  },
+  "benign": {
+    "decision": {},
+    "blocked": false,
+    "screen_s": 6.0
+  },
+  "injection": {
+    "decision": {
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": "agent-guard blocked tool 'web_fetch': score 1.000 >= block_threshold 0.85 (owasp=LLM01_direct,LLM07;atlas=AML_T0051_000)"
+      }
+    },
+    "blocked": true
+  },
+  "passed": true,
+  "summary": "CODEX HOOK E2E: PASS"
+}
