@@ -1,6 +1,6 @@
 {
   "name": "agent-guard-openclaw",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Automatic prompt-injection screening for OpenCLAW tool calls. Auto-registers a before_tool_call hook that screens web fetch/search results and other untrusted tool content.",
   "type": "module",
   "license": "Apache-2.0",
