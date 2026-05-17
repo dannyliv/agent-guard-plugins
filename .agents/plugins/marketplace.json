@@ -1,0 +1,20 @@
+{
+  "name": "agent-guard",
+  "description": "Agent Guard — prompt-injection screening plugins for AI coding agents.",
+  "owner": {
+    "name": "dannyliv"
+  },
+  "plugins": [
+    {
+      "name": "agent-guard",
+      "description": "Automatic prompt-injection screening for OpenAI Codex CLI tool calls. Bundles PreToolUse and PostToolUse lifecycle hooks that screen tool input and returned content with Agent Guard's Content Guard engine before Codex acts on them.",
+      "source": "./codex-plugin",
+      "category": "security",
+      "homepage": "https://github.com/dannyliv/agent-guard-plugins",
+      "author": {
+        "name": "dannyliv",
+        "url": "https://github.com/dannyliv"
+      }
+    }
+  ]
+}
