@@ -386,36 +386,45 @@ returns a placeholder string instead of raising.
 | `notify` | `None` | Callable invoked with the `ScreenResult` on every risky hit. |
 | `screen_web` | `True` | Always screen web-sourced content, even if its source is allow-listed. |
 
-### Automatic screening in OpenCLAW
+### Automatic screening (no manual wrapping)
 
-The hook above is manual: a developer calls it. For [OpenCLAW](https://openclaw.ai)
-there is an installable plugin that wires Content Guard in automatically, with
-no code change and no AGENTS.md step.
+The hook above is manual: a developer calls it. For four platforms there is an
+installable plugin / hook that wires Content Guard in automatically, with no
+code change. Every integration reuses the same Content Guard engine and the
+same `~/.agent-guard/content_guard.toml` config, so one trust list / threshold
+/ mode tunes screening everywhere. Each fails open (a missing Python, a
+model-load failure, or a timeout never blocks a tool call) and ships a kill
+switch — screening is on by default, never forced.
 
-The plugin lives in this repo under [`openclaw-plugin/`](openclaw-plugin/) and
-publishes to npm as `agent-guard-openclaw`. OpenCLAW discovers it through the
-`openclaw` field in its `package.json` plus the `openclaw.plugin.json` manifest;
-`activation.onStartup: true` activates it at gateway startup. It registers a
-`before_tool_call` hook that runs on every tool call, collects the tool's
-textual params (web page text, search results, email body, GitHub issue text,
-MCP tool output), and screens them with Content Guard. Risky content blocks the
-tool call before the agent acts on it. Authorized channels are skipped per the
-same `~/.agent-guard/content_guard.toml` config.
+| Platform | Auto-wiring mechanism | Install |
+|---|---|---|
+| **Claude Code** | A Claude Code plugin (`claude-code-plugin/`): a `.claude-plugin/plugin.json` manifest + `hooks/hooks.json` registering PreToolUse + PostToolUse hooks. | `pip install agent-guard-plugins`, then load the plugin (marketplace or `--plugin-dir`). |
+| **OpenAI Codex CLI** | A `~/.codex/hooks.json` PreToolUse + PostToolUse hook. Codex has no plugin manifest, so a one-line installer writes the hook. | `pip install agent-guard-plugins && agent-guard-codex-install` |
+| **Hermes Agent** | A Hermes plugin, discovered via the `hermes_agent.plugins` entry point; registers a `pre_tool_call` + `transform_tool_result` hook. | `pip install agent-guard-plugins`, then `hermes plugins enable agent-guard` |
+| **OpenCLAW** | An npm plugin (`openclaw-plugin/`), discovered via the `openclaw` package.json field; registers a `before_tool_call` hook. | `pip install agent-guard-plugins && openclaw plugins install agent-guard-openclaw` |
 
-Install both halves — the npm plugin (the OpenCLAW seam) and this Python
-package (the screening engine):
+**What gets screened.** Where a platform exposes both a pre-call and a
+post-call hook (Claude Code, Codex, Hermes), Content Guard screens at both:
 
-```bash
-pip install agent-guard-plugins
-openclaw plugins install agent-guard-openclaw
-```
+- *Pre-call* screens the tool **input** (a `WebFetch` prompt, a `WebSearch`
+  query, a `Bash` command) — the direct-injection surface. A risky input is
+  denied before the tool runs. File-path params (`file_path`, `path`, ...) are
+  skipped; a path is not injection content.
+- *Post-call* screens the tool **result** (fetched page text, file contents,
+  MCP tool output) — the indirect-prompt-injection surface. A flagged result
+  is blocked or sanitized so the agent does not act on instructions hidden in
+  third-party content.
 
-Screening is on by default but not forced. Set `AGENT_GUARD_OPENCLAW_DISABLED=1`
-to load the plugin without screening. If the screening bridge cannot run
-(Python missing, model load failure, timeout) the hook returns no decision and
-the tool call proceeds — a broken guard never wedges the agent. See
-[`openclaw-plugin/README.md`](openclaw-plugin/README.md) for the full plugin
-reference.
+OpenCLAW's `before_tool_call` hook screens tool params; the others add
+result-screening on top.
+
+**Kill switches.** `AGENT_GUARD_CLI_HOOK_DISABLED=1` (Claude Code / Codex),
+`AGENT_GUARD_HERMES_DISABLED=1` (Hermes), `AGENT_GUARD_OPENCLAW_DISABLED=1`
+(OpenCLAW) load the plugin but screen nothing.
+
+See [`openclaw-plugin/README.md`](openclaw-plugin/README.md) and
+[`claude-code-plugin/README.md`](claude-code-plugin/README.md) for per-platform
+detail.
 
 ## Dashboard
 
