@@ -2,6 +2,33 @@
 
 All notable changes to `agent-guard-plugins`.
 
+## 0.4.0
+
+### Added
+
+- **Automatic OpenCLAW screening.** An installable OpenCLAW plugin
+  (`openclaw-plugin/`, published to npm as `agent-guard-openclaw`) that wires
+  Content Guard into OpenCLAW with no code change. OpenCLAW discovers it via
+  the `openclaw` field in `package.json` plus the `openclaw.plugin.json`
+  manifest; `activation.onStartup: true` activates it at gateway startup.
+  - The plugin registers a `before_tool_call` hook. On every tool call it
+    collects the tool's textual params (web page text, search results, email
+    body, GitHub issue text, MCP tool output) and screens them. Risky content
+    blocks the tool call; authorized channels are skipped per the existing
+    `~/.agent-guard/content_guard.toml` config. Web-sourced tools (fetch /
+    search / browse) are always screened even when the source is trusted.
+  - `agent_guard_plugins.integrations.openclaw_bridge`: the Python half of the
+    plugin. A JSON-in / JSON-out screening function plus a console script
+    (`agent-guard-openclaw`) that the Node plugin spawns once per tool call.
+  - Both halves fail open: a missing Python, model-load failure, or timeout
+    never blocks a tool call. `AGENT_GUARD_OPENCLAW_DISABLED=1` is a kill
+    switch — screening is on by default but not forced.
+- Tests for the auto-wiring: `tests/test_openclaw_bridge.py` (verdict
+  contract, trust list, fail-open, kill switch, console-script stdin/stdout)
+  and `openclaw-plugin/test/plugin.test.mjs` (real OpenCLAW SDK registration,
+  `before_tool_call` screening, block/allow contract). The real-runtime e2e
+  test now exercises the shipped plugin artifact directly.
+
 ## 0.3.1
 
 ### Fixed
