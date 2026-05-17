@@ -2,6 +2,36 @@
 
 All notable changes to `agent-guard-plugins`.
 
+## 0.3.0
+
+### Added
+
+- **Content Guard** (`agent_guard_plugins.content_guard`), a configurable
+  policy layer over `guard()` that screens, blocks, and notifies on risky
+  content from web pages, tools, and other unauthorized channels.
+  - `ContentGuardConfig`: an authorized-channels trust list (sources that skip
+    screening), a `block_threshold` (default 0.85), a `block` / `warn` mode, a
+    `notify` callback, and a `screen_web` flag. Loadable from
+    `~/.agent-guard/content_guard.toml` (or a JSON file) via
+    `ContentGuardConfig.from_file()`.
+  - `ContentGuard.screen()` returns a `ScreenResult` (allowed/blocked, score,
+    reason, source). Trusted sources are allowed without running the model;
+    everything else runs the V3.2 detector.
+  - A hook: `ContentGuard.guarded()` / `@ContentGuard.content_hook` wraps any
+    content-returning callable so its output is screened automatically. Risky
+    content raises `BlockedContentError` in `block` mode, or returns a
+    sanitized placeholder via `sanitize()`.
+  - Blocked items are recorded to the detections SQLite log and appear in the
+    `agent-guard-dashboard` feed.
+- `ContentGuard`, `ContentGuardConfig`, `ScreenResult`, and
+  `BlockedContentError` are exported from the top-level package.
+
+### Fixed
+
+- The package version is now bumped in both `pyproject.toml` and
+  `src/agent_guard_plugins/__init__.py`. The 0.2.0 release left
+  `__init__.py.__version__` behind; both are kept in sync from 0.3.0 on.
+
 ## 0.2.0
 
 The served classifier moved from V2 to V3.2 on both Hugging Face repos.
