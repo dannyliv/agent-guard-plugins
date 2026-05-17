@@ -1,0 +1,31 @@
+{
+  "description": "Agent Guard — automatic prompt-injection screening on every Codex tool call. PreToolUse screens the tool's input params (web fetch prompt, search query, shell command) and denies risky calls; PostToolUse screens the tool's returned content (web page text, file contents, MCP output) and blocks Codex from acting on a flagged result. Both reuse the Content Guard engine and ~/.agent-guard/content_guard.toml.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PLUGIN_ROOT}/hooks/agent-guard-hook.sh\"",
+            "statusMessage": "agent-guard: screening tool content for prompt injection",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PLUGIN_ROOT}/hooks/agent-guard-hook.sh\"",
+            "statusMessage": "agent-guard: screening tool content for prompt injection",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
