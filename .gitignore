@@ -16,3 +16,7 @@ dist/
 # e2e harness symlinks into throwaway npm prefixes (created at run time)
 tests/e2e_results/openclaw_plugin/node_modules
 tests/e2e_results/codex_wrapper/node_modules
+
+# openclaw-plugin npm install / lockfile (plugin published from source)
+openclaw-plugin/node_modules
+openclaw-plugin/package-lock.json

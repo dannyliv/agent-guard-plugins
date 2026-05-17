@@ -386,6 +386,37 @@ returns a placeholder string instead of raising.
 | `notify` | `None` | Callable invoked with the `ScreenResult` on every risky hit. |
 | `screen_web` | `True` | Always screen web-sourced content, even if its source is allow-listed. |
 
+### Automatic screening in OpenCLAW
+
+The hook above is manual: a developer calls it. For [OpenCLAW](https://openclaw.ai)
+there is an installable plugin that wires Content Guard in automatically, with
+no code change and no AGENTS.md step.
+
+The plugin lives in this repo under [`openclaw-plugin/`](openclaw-plugin/) and
+publishes to npm as `agent-guard-openclaw`. OpenCLAW discovers it through the
+`openclaw` field in its `package.json` plus the `openclaw.plugin.json` manifest;
+`activation.onStartup: true` activates it at gateway startup. It registers a
+`before_tool_call` hook that runs on every tool call, collects the tool's
+textual params (web page text, search results, email body, GitHub issue text,
+MCP tool output), and screens them with Content Guard. Risky content blocks the
+tool call before the agent acts on it. Authorized channels are skipped per the
+same `~/.agent-guard/content_guard.toml` config.
+
+Install both halves — the npm plugin (the OpenCLAW seam) and this Python
+package (the screening engine):
+
+```bash
+pip install agent-guard-plugins
+openclaw plugins install agent-guard-openclaw
+```
+
+Screening is on by default but not forced. Set `AGENT_GUARD_OPENCLAW_DISABLED=1`
+to load the plugin without screening. If the screening bridge cannot run
+(Python missing, model load failure, timeout) the hook returns no decision and
+the tool call proceeds — a broken guard never wedges the agent. See
+[`openclaw-plugin/README.md`](openclaw-plugin/README.md) for the full plugin
+reference.
+
 ## Dashboard
 
 ```bash

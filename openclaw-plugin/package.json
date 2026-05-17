@@ -1,0 +1,50 @@
+{
+  "name": "agent-guard-openclaw",
+  "version": "0.4.0",
+  "description": "Automatic prompt-injection screening for OpenCLAW tool calls. Auto-registers a before_tool_call hook that screens web fetch/search results and other untrusted tool content.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "dannyliv",
+  "homepage": "https://github.com/dannyliv/agent-guard-plugins",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dannyliv/agent-guard-plugins.git",
+    "directory": "openclaw-plugin"
+  },
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "prompt-injection",
+    "security",
+    "agent-guard"
+  ],
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "files": [
+    "index.mjs",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "openclaw": {
+    "extensions": ["./index.mjs"],
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2",
+      "minGatewayVersion": "2026.3.24-beta.2"
+    },
+    "build": {
+      "openclawVersion": "2026.5.7",
+      "pluginSdkVersion": "2026.5.7"
+    }
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.24-beta.2"
+  }
+}
