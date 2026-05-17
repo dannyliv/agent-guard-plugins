@@ -3,7 +3,7 @@ import pytest
 
 
 def test_imports():
-    from agent_guard_plugins import guard, GuardResult, LABELS, OWASP, ATLAS
+    from agent_guard_plugins import guard, LABELS, OWASP, ATLAS
     assert callable(guard)
     assert len(LABELS) == 17
     assert "LLM01_direct" in OWASP
