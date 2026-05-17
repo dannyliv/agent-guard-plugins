@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-guard-plugins"
-version = "0.4.0"
+version = "0.5.0"
 description = "Drop-in prompt-injection guards for Claude, OpenAI Codex, Hermes, and OpenCLAW agents. Wraps the agent-guard-modernbert-base and agent-guard-deberta-pi-base classifiers on Hugging Face."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -53,6 +53,19 @@ agent-guard-dashboard = "agent_guard_plugins.dashboard.app:main"
 # JSON bridge spawned by the OpenCLAW (Node.js) plugin: reads one tool-call
 # payload on stdin, writes one Content Guard verdict to stdout.
 agent-guard-openclaw = "agent_guard_plugins.integrations.openclaw_bridge:main"
+# PreToolUse bridge spawned by the Claude Code plugin and the Codex hook:
+# reads one PreToolUse event on stdin, writes one decision to stdout.
+agent-guard-cli-hook = "agent_guard_plugins.integrations.cli_hook_bridge:main"
+# One-line installer for the OpenAI Codex CLI PreToolUse hook (~/.codex).
+agent-guard-codex-install = "agent_guard_plugins.integrations.codex_install:main"
+# Installer for the Hermes Agent directory plugin (~/.hermes/plugins).
+agent-guard-hermes-install = "agent_guard_plugins.integrations.hermes_plugin:main"
+
+# Hermes Agent discovers pip-installed plugins via this entry-point group.
+# Once agent-guard-plugins is installed, `hermes plugins enable agent-guard`
+# activates automatic pre_tool_call screening — no directory install needed.
+[project.entry-points."hermes_agent.plugins"]
+agent-guard = "agent_guard_plugins.integrations.hermes_plugin"
 
 [tool.setuptools.packages.find]
 where = ["src"]
