@@ -5,12 +5,12 @@
     "hook_script_exists": true,
     "hooks_json_valid": true,
     "matcher": "*",
-    "hooks_json_path": "/var/folders/y8/77wmdd7157v_l_m_p0943fp00000gn/T/tmplpalep_f/.codex/hooks.json"
+    "hooks_json_path": "/var/folders/y8/77wmdd7157v_l_m_p0943fp00000gn/T/tmp3q9htwzm/.codex/hooks.json"
   },
   "benign": {
     "decision": {},
     "blocked": false,
-    "screen_s": 6.0
+    "screen_s": 3.6
   },
   "injection": {
     "decision": {

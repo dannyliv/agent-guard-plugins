@@ -1,6 +1,6 @@
 # Demonstrates the Hermes integration. Hermes is from Nous Research (nousresearch.com), MIT license.
 # GuardedChatModel wraps any HuggingFace causal LM with a pre-inference injection guard.
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import torch
 from agent_guard_plugins.integrations.hermes import GuardedChatModel
 
