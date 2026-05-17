@@ -296,6 +296,96 @@ if not decision.allow:
     raise PermissionError(decision.reason)
 ```
 
+## Content Guard — screen, block, and notify on risky web content
+
+`guard()` scores text. Content Guard is the policy layer that decides what to
+do with the score, and automates that decision across an agent's content
+sources.
+
+It does three things:
+
+- **Trusts what you tell it to trust.** An authorized-channels list (domains,
+  tool names, channel ids) names sources you control. Content from those skips
+  the model entirely. Everything else gets screened.
+- **Blocks risky content.** A page or tool output scoring at or above
+  `block_threshold` is blocked (raises `BlockedContentError`) or, in `warn`
+  mode, allowed through with a warning. The threshold defaults to 0.85 — higher
+  than `guard()`'s 0.4 flag threshold, because blocking is more disruptive than
+  flagging.
+- **Notifies.** A `notify` callback fires on every risky hit. Blocked items are
+  also written to the detections SQLite log, so they show up in the dashboard.
+
+It is built on `guard()` — same V3.2 detector, no second model.
+
+### Configure
+
+In code:
+
+```python
+from agent_guard_plugins import ContentGuard, ContentGuardConfig
+
+cg = ContentGuard(ContentGuardConfig(
+    authorized_channels={"internal-wiki", "docs.example.com"},
+    block_threshold=0.85,
+    mode="block",                       # or "warn"
+    notify=lambda r: print("RISKY:", r.source, r.score),
+    screen_web=True,                    # always screen web-sourced content
+))
+```
+
+Or from a file, so non-developers can tune the policy. Default location is
+`~/.agent-guard/content_guard.toml` (a `.json` file at the same stem also
+works):
+
+```toml
+authorized_channels = ["internal-wiki", "docs.example.com"]
+block_threshold = 0.85
+mode = "block"
+screen_web = true
+```
+
+```python
+from agent_guard_plugins.content_guard import ContentGuardConfig, ContentGuard
+
+cg = ContentGuard(ContentGuardConfig.from_file())   # loads the TOML above
+```
+
+### Use it as a hook
+
+Wrap any callable that returns content from an untrusted source. The decorator
+screens the return value automatically:
+
+```python
+@cg.content_hook(source_arg="url", web=True)
+def fetch_page(url):
+    return requests.get(url).text
+
+text = fetch_page("https://random-blog.example/post")
+# If the page hides a prompt injection, this raises BlockedContentError
+# (block mode) before the text ever reaches your model.
+```
+
+`source_arg` names the parameter that carries the per-call source. Pass a fixed
+`source=` instead for a single-channel reader. Or screen content directly:
+
+```python
+result = cg.screen(page_text, source="random-blog.example", web=True)
+if result.blocked:
+    ...   # result.score, result.reason, result.source
+```
+
+`ScreenResult` carries `allowed` / `blocked`, `score`, `reason`, `source`, and
+the underlying `GuardResult`. For pipelines that must not throw, `cg.sanitize()`
+returns a placeholder string instead of raising.
+
+| Config option | Default | Meaning |
+|---|---|---|
+| `authorized_channels` | empty | Trusted source ids that skip screening. |
+| `block_threshold` | `0.85` | Injection probability at or above which content is blocked. |
+| `mode` | `"block"` | `block` raises `BlockedContentError`; `warn` allows through with a warning. |
+| `notify` | `None` | Callable invoked with the `ScreenResult` on every risky hit. |
+| `screen_web` | `True` | Always screen web-sourced content, even if its source is allow-listed. |
+
 ## Dashboard
 
 ```bash

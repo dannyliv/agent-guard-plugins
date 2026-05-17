@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-guard-plugins"
-version = "0.2.0"
+version = "0.3.0"
 description = "Drop-in prompt-injection guards for Claude, OpenAI Codex, Hermes, and OpenCLAW agents. Wraps the agent-guard-modernbert-base and agent-guard-deberta-pi-base classifiers on Hugging Face."
 readme = "README.md"
 license = {text = "Apache-2.0"}
