@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-guard-plugins"
-version = "0.3.1"
+version = "0.4.0"
 description = "Drop-in prompt-injection guards for Claude, OpenAI Codex, Hermes, and OpenCLAW agents. Wraps the agent-guard-modernbert-base and agent-guard-deberta-pi-base classifiers on Hugging Face."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -50,6 +50,9 @@ Issues = "https://github.com/dannyliv/agent-guard-plugins/issues"
 
 [project.scripts]
 agent-guard-dashboard = "agent_guard_plugins.dashboard.app:main"
+# JSON bridge spawned by the OpenCLAW (Node.js) plugin: reads one tool-call
+# payload on stdin, writes one Content Guard verdict to stdout.
+agent-guard-openclaw = "agent_guard_plugins.integrations.openclaw_bridge:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
