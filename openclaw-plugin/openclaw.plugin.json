@@ -1,0 +1,27 @@
+{
+  "id": "agent-guard",
+  "name": "Agent Guard",
+  "description": "Automatic prompt-injection screening for OpenCLAW tool calls. Screens web fetch/search results and other untrusted tool content before the agent acts on them.",
+  "version": "0.4.0",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "disabled": {
+        "type": "boolean",
+        "description": "When true, the plugin loads but screens nothing. Equivalent to the AGENT_GUARD_OPENCLAW_DISABLED env var. Screening is on by default but not forced."
+      },
+      "python": {
+        "type": "string",
+        "description": "Path to the Python executable that has agent-guard-plugins installed. Defaults to AGENT_GUARD_PYTHON or python3."
+      },
+      "timeoutMs": {
+        "type": "integer",
+        "description": "Per-tool-call budget for the Content Guard screening subprocess. Defaults to 15000."
+      }
+    }
+  }
+}

@@ -12,7 +12,7 @@ from .content_guard import (
 )
 from .core import ATLAS, LABELS, OWASP, GuardResult, guard, guard_batch
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 __all__ = [
     "guard",
     "guard_batch",

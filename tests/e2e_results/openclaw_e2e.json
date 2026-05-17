@@ -11,7 +11,7 @@
       "passed": true,
       "hook_result": {
         "block": true,
-        "blockReason": "agent-guard blocked: owasp=LLM01_direct,LLM01_indirect,LLM06,LLM07;atlas=AML_T0051_000"
+        "blockReason": "agent-guard blocked tool 'email_summarize': score 0.999 >= block_threshold 0.85 (owasp=LLM01_direct;atlas=AML_T0051_000)"
       }
     }
   ],
