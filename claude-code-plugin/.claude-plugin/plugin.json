@@ -1,0 +1,18 @@
+{
+  "name": "agent-guard",
+  "description": "Automatic prompt-injection screening for Claude Code tool calls. Registers a PreToolUse hook that screens WebFetch / WebSearch results and other untrusted tool content with Agent Guard's Content Guard engine before Claude acts on them.",
+  "version": "0.5.0",
+  "author": {
+    "name": "dannyliv"
+  },
+  "homepage": "https://github.com/dannyliv/agent-guard-plugins",
+  "repository": "https://github.com/dannyliv/agent-guard-plugins.git",
+  "license": "Apache-2.0",
+  "keywords": [
+    "prompt-injection",
+    "security",
+    "agent-guard",
+    "claude-code",
+    "hooks"
+  ]
+}
