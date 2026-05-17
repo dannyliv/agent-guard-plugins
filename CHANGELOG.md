@@ -2,6 +2,14 @@
 
 All notable changes to `agent-guard-plugins`.
 
+## 0.3.1
+
+### Fixed
+
+- `ContentGuardConfig.from_file()` now loads TOML on Python 3.10. The bare
+  `import tomllib` (Python 3.11+ stdlib) is replaced with a version-safe import
+  that falls back to the `tomli` backport, now a conditional dependency on 3.10.
+
 ## 0.3.0
 
 ### Added
