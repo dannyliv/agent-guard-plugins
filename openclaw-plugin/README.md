@@ -47,3 +47,9 @@ Content Guard config file at `~/.agent-guard/content_guard.toml`. See the
 If the screening bridge cannot run (Python missing, model load failure,
 timeout), the hook returns no decision and the tool call proceeds. A broken
 guard never wedges the agent.
+
+## Maintainer and license
+
+Maintained by [@dannyliv](https://github.com/dannyliv). Report issues or
+vulnerabilities on the [main repository](https://github.com/dannyliv/agent-guard-plugins).
+Licensed under Apache-2.0.

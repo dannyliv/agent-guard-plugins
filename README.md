@@ -19,12 +19,12 @@ The benefit: a known control-flow hijack against your agent gets caught at the
 door instead of running. The classifier is small (149M or 184M parameters),
 CPU-friendly, Apache-2.0, and pinned to a versioned model on Hugging Face.
 
-**Now serving V3.2.** V3.2 fixes the GCG jailbreak weakness in V2 (a white-box
-attack that flipped 100 percent of flagged prompts now lands far less often)
-and improves held-out F1. The honest tradeoff: V3.2 has a higher benign
-false-positive rate than V2 (ModernBERT 3.2 percent, DeBERTa 1.6 percent at
-threshold 0.5). Tune the threshold against your own benign traffic if false
-positives matter for your deployment. See [What V3.2 changed](#what-v32-changed).
+The honest tradeoff: the classifier flags a small fraction of benign
+instructions as injections (roughly 1.6 to 3.2 percent at threshold 0.5,
+depending on the model). Tune the threshold against your own benign traffic if
+false positives matter for your deployment — see [Model Evaluation](#model-evaluation).
+Per-release model and behavior changes are recorded in
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ## What This Solves
 
@@ -43,7 +43,7 @@ Agent Guard is a fast, local, drop-in classifier. Call it on any untrusted text 
 
 ## Attack Types Detected
 
-The V3.2 classifier is trained on a permissively-licensed mix of roughly 98,000 examples covering the attack families below. The binary `is_injection` head is the production signal. The "Eval coverage" column names the held-out or in-distribution benchmark that exercises each category.
+The classifier is trained on a permissively-licensed mix of roughly 98,000 examples covering the attack families below. The binary `is_injection` head is the production signal. The "Eval coverage" column names the held-out or in-distribution benchmark that exercises each category.
 
 | Attack category | What it is | Eval coverage |
 |---|---|---|
@@ -61,18 +61,9 @@ Coverage maps to OWASP LLM01 (direct and indirect) and LLM07 (system-prompt leak
 - **Multilingual attacks.** Training data is English-only (with some German via deepset). Cross-lingual generalization is untested.
 - **Code-as-prompt.** Instructions disguised as source code or config files are not a measured category.
 - **ASCII-art and heavy obfuscation.** Unicode steganography beyond the homoglyph subset in training is out of distribution.
-- **White-box adversarial suffixes (GCG).** A Greedy Coordinate Gradient attack with model-weight access can still flip a fresh adaptive run near 100 percent. V3.2 hardened the model against precomputed-replay GCG (V2 was 100 percent, V3.2 is 2.4 percent for ModernBERT, 31.3 percent for DeBERTa), but a live adaptive attacker with weight access is not stopped by training alone. Pair Agent Guard with a token-quality pre-filter and treat it as one layer of defense in depth.
+- **White-box adversarial suffixes (GCG).** A Greedy Coordinate Gradient attack with model-weight access can still flip a fresh adaptive run near 100 percent. The model is hardened against precomputed-replay GCG (a fixed precomputed suffix lands on about 2.4 percent of ModernBERT runs and 31.3 percent of DeBERTa runs), but a live adaptive attacker with weight access is not stopped by training alone. Pair Agent Guard with a token-quality pre-filter and treat it as one layer of defense in depth.
 
 For the full per-citation inventory, see `docs/THREAT_MODEL.md` in the (private) training repo.
-
-## What V3.2 changed
-
-V3.2 replaces V2 on both Hugging Face repos.
-
-- **GCG jailbreak weakness fixed.** V2 failed a precomputed-replay GCG attack 100 percent of the time. V3.2 cuts that to 2.4 percent (ModernBERT) and 31.3 percent (DeBERTa).
-- **Held-out F1 improved** on JailbreakBench for both models.
-- **Honest cost: a higher benign false-positive rate.** V3.2 ModernBERT flags 3.2 percent of benign instructions at threshold 0.5 (V2 was 7.4 percent, so ModernBERT actually improved). V3.2 DeBERTa flags 1.6 percent, up from V2's 0.8 percent. If false positives matter, raise the threshold or tune against your own benign traffic. At threshold 0.7 both models drop under 1 percent FPR.
-- **Repo layout.** Each Hugging Face repo now ships a merged full model at the repo root, the standalone LoRA adapter under `adapter/`, and the ONNX export under `onnx/`. The plugin's default path loads the merged model and no longer needs `peft` at runtime.
 
 ## Pick a model
 
@@ -175,7 +166,7 @@ print(result.flagged, result.is_injection_prob, result.reason())
 The plugin's `guard()` wrapper is the easy path. If you want to call the
 classifier yourself (custom batching, your own logging, a non-Python service
 calling the ONNX export), load the model directly. Each Hugging Face repo
-serves three forms of the same V3.2 classifier:
+serves three forms of the same classifier:
 
 - the **merged full model** at the repo root (the default the plugin uses),
 - the standalone **LoRA adapter** under `adapter/`,
@@ -315,7 +306,7 @@ It does three things:
 - **Notifies.** A `notify` callback fires on every risky hit. Blocked items are
   also written to the detections SQLite log, so they show up in the dashboard.
 
-It is built on `guard()` — same V3.2 detector, no second model.
+It is built on `guard()` — same detector, no second model.
 
 ### Configure
 
@@ -450,22 +441,22 @@ Every `guard()` call logs to `~/.agent-guard/detections.sqlite` and the dashboar
 
 The plugin wraps two fine-tuned encoder classifiers for prompt-injection detection: ModernBERT-base (149M parameters, 8k-token context) and DeBERTa-v3-PI (184M parameters, 512-token context). Full methodology and reproduction steps live on the two Hugging Face model cards.
 
-### Headline: V3.2 on the held-out JailbreakBench set
+### Headline: held-out JailbreakBench results
 
-JailbreakBench (JBB-Behaviors) is the only true held-out benchmark, never seen in training. Benign FPR is the false-positive rate on `databricks/databricks-dolly-15k` benign instructions (n=500), at threshold 0.5.
+JailbreakBench (JBB-Behaviors) is the only true held-out benchmark, never seen in training. Benign FPR is the false-positive rate on `databricks/databricks-dolly-15k` benign instructions (n=500), at threshold 0.5. These numbers track the currently-served model; per-release changes are in [`CHANGELOG.md`](CHANGELOG.md).
 
 | Model | Params | JBB-Behaviors F1@0.5 | JBB recall@0.5 | Benign FPR @0.5 | Benign FPR @0.7 |
 |---|---:|---:|---:|---:|---:|
 | agent-guard-deberta-pi-base | 184M | 0.930 | 0.870 | 1.6% | 0.8% |
 | agent-guard-modernbert-base | 149M | 0.834 | 0.715 | 3.2% | 0.4% |
 
-V3.2 fixed the GCG precomputed-replay weakness: V2 failed that attack 100 percent of the time, V3.2 fails it 2.4 percent (ModernBERT) and 31.3 percent (DeBERTa). The cost is a higher benign FPR than V2 at threshold 0.5. Raising the threshold to 0.7 pulls both models under 1 percent FPR.
+A fixed precomputed-replay GCG suffix lands on about 2.4 percent of ModernBERT runs and 31.3 percent of DeBERTa runs. Raising the threshold to 0.7 pulls both models under 1 percent benign FPR.
 
-### V2-era cross-classifier comparison
+### Cross-classifier comparison (earlier model snapshot)
 
-The tables below were measured on the V2 models. They show how the Agent Guard family compares to other public classifiers and are kept for that context. The two Agent Guard rows reflect V2; the current V3.2 held-out numbers are in the table above and on the model cards.
+The tables below were measured on an earlier snapshot of the Agent Guard models. They show how the Agent Guard family compares to other public classifiers and are kept for that context. The current held-out numbers are in the table above and on the model cards.
 
-#### Comparison vs LlamaGuard-3-8B (V2-era)
+#### Comparison vs LlamaGuard-3-8B
 
 Agent Guard DeBERTa against Meta's `meta-llama/Llama-Guard-3-8B`, the strongest gated safety classifier in the comparison.
 
@@ -479,7 +470,7 @@ LG3 is a general harmful-content classifier (CSAM, weapons, hate). Its score dis
 
 > The Agent Guard DeBERTa column shows F1@0.5 on the headline row above (0.711 / 0.710 / 0.929) and best-tuned F1 here (0.711 / 0.915 / 0.938). The 0.915 and 0.938 figures are the per-benchmark sweep optima, used here for an apples-to-apples comparison against LG3's tuned numbers.
 
-#### Cross-classifier comparison (V2-era)
+#### Cross-classifier comparison
 
 Best F1 per benchmark, each model swept independently for its own optimal threshold. Top six by JBB-Behaviors F1.
 
@@ -500,8 +491,8 @@ F1@0.5 is the drop-in number: deploy with no tuning and this is the score. Best-
 
 ### Honest limitations
 
-- **Benign false positives.** At threshold 0.5, V3.2 ModernBERT flags 3.2 percent of benign instructions and V3.2 DeBERTa flags 1.6 percent. That is roughly 1 in 31 and 1 in 62 legitimate requests. Raise the threshold to 0.7 (both drop under 1 percent) or tune against your own benign traffic.
-- **Live adaptive white-box GCG still succeeds.** V3.2 hardened the model against precomputed-replay GCG, but an attacker with model weights running a fresh adaptive Greedy Coordinate Gradient search can still flip flagged prompts near 100 percent of the time. The attack produces visible nonsense-token suffixes. Pair Agent Guard with a token-quality pre-filter and treat it as one layer of defense in depth, not a sole guardrail.
+- **Benign false positives.** At threshold 0.5, ModernBERT flags 3.2 percent of benign instructions and DeBERTa flags 1.6 percent. That is roughly 1 in 31 and 1 in 62 legitimate requests. Raise the threshold to 0.7 (both drop under 1 percent) or tune against your own benign traffic.
+- **Live adaptive white-box GCG still succeeds.** The model is hardened against precomputed-replay GCG, but an attacker with model weights running a fresh adaptive Greedy Coordinate Gradient search can still flip flagged prompts near 100 percent of the time. The attack produces visible nonsense-token suffixes. Pair Agent Guard with a token-quality pre-filter and treat it as one layer of defense in depth, not a sole guardrail.
 - **Out-of-distribution attack variants are not measured.** Multilingual injections, code-as-prompt attacks, and novel jailbreak families fall outside the English 2023-2025 training mix. Plan to retrain when your threat model shifts.
 
 ### Links
@@ -534,8 +525,8 @@ start: ProtectAI's pre-trained classifier already separates instruction-
 override patterns. After training, each LoRA adapter was merged back into its
 base to produce the full model the plugin loads by default.
 
-V3.2 trained on a permissively-licensed corpus of about 98,000 labelled rows
-after MinHash near-duplicate removal: roughly half injection-positive, half
+The classifier trained on a permissively-licensed corpus of about 98,000
+labelled rows after MinHash near-duplicate removal: roughly half injection-positive, half
 benign. It layers public PI datasets, in-the-wild jailbreak mirrors, a
 hand-built seed attack catalog, 9 deterministic literature-based red-team
 transforms (base64 / ROT13 / leetspeak, payload splitting, zero-width and
