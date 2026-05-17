@@ -44,7 +44,8 @@ def _result(flagged: bool) -> GuardResult:
 @pytest.fixture
 def allow(monkeypatch):
     """Patch guard() in every adapter module to ALLOW."""
-    fn = lambda text, **kw: _result(False)
+    def fn(text, **kw):
+        return _result(False)
     for mod in (claude, openai_codex, hermes, openclaw):
         monkeypatch.setattr(mod, "guard", fn)
     return fn
@@ -53,7 +54,8 @@ def allow(monkeypatch):
 @pytest.fixture
 def block(monkeypatch):
     """Patch guard() in every adapter module to BLOCK."""
-    fn = lambda text, **kw: _result(True)
+    def fn(text, **kw):
+        return _result(True)
     for mod in (claude, openai_codex, hermes, openclaw):
         monkeypatch.setattr(mod, "guard", fn)
     return fn
@@ -201,7 +203,7 @@ class TestOpenCLAW:
 class TestClaude:
     def test_benign_passes(self, allow):
         client = FakeAnthropicClient()
-        resp = guarded = claude.guarded_messages_create(
+        resp = claude.guarded_messages_create(
             client, model="claude-sonnet-4-6", max_tokens=64,
             messages=[{"role": "user", "content": BENIGN}])
         assert len(client.calls) == 1  # real platform call happened

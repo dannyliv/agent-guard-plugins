@@ -45,6 +45,9 @@ all = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/dannyliv/agent-guard-plugins"
+Repository = "https://github.com/dannyliv/agent-guard-plugins"
+Changelog = "https://github.com/dannyliv/agent-guard-plugins/blob/main/CHANGELOG.md"
 Models = "https://huggingface.co/dannyliv/agent-guard-modernbert-base"
 Issues = "https://github.com/dannyliv/agent-guard-plugins/issues"
 

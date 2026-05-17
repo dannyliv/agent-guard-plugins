@@ -18,7 +18,7 @@ RESULT = {"platform": "Hermes", "model": "NousResearch/Hermes-3-Llama-3.2-3B"}
 try:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
-    from agent_guard_plugins.integrations.hermes import GuardedChatModel, ChatOutput
+    from agent_guard_plugins.integrations.hermes import GuardedChatModel
 
     HERMES = "NousResearch/Hermes-3-Llama-3.2-3B"
     t0 = time.time()

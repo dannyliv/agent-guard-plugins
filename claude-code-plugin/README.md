@@ -41,7 +41,16 @@ claude --plugin-dir /path/to/agent-guard-plugins/claude-code-plugin
 ```
 
 For a persistent install, add the repo as a plugin marketplace and install
-`agent-guard` through `/plugin`. See the Claude Code plugin docs.
+`agent-guard` through `/plugin`:
+
+```
+/plugin marketplace add dannyliv/agent-guard-plugins
+/plugin install agent-guard
+```
+
+Any plugin can be installed straight from its Git repository whether or not it
+is listed in the official Anthropic plugin directory. See the
+[Claude Code plugin docs](https://code.claude.com/docs/en/plugins).
 
 ## How the bridge works
 
@@ -70,6 +79,8 @@ If Python is missing, the package is not installed, the model fails to load, or
 the bridge times out, the hook returns an empty decision and the tool call
 proceeds. A broken guard never wedges Claude Code.
 
-## License
+## Maintainer and license
 
-Apache-2.0.
+Maintained by [@dannyliv](https://github.com/dannyliv). Report issues or
+vulnerabilities on the [main repository](https://github.com/dannyliv/agent-guard-plugins).
+Licensed under Apache-2.0.
