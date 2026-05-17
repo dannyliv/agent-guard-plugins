@@ -1,0 +1,19 @@
+{
+  "name": "agent-guard",
+  "version": "0.5.0",
+  "description": "Automatic prompt-injection screening for OpenAI Codex CLI tool calls. Bundles PreToolUse and PostToolUse lifecycle hooks that screen tool input params and returned content with Agent Guard's Content Guard engine before Codex acts on them.",
+  "author": {
+    "name": "dannyliv"
+  },
+  "homepage": "https://github.com/dannyliv/agent-guard-plugins",
+  "repository": "https://github.com/dannyliv/agent-guard-plugins.git",
+  "license": "Apache-2.0",
+  "keywords": [
+    "prompt-injection",
+    "security",
+    "agent-guard",
+    "codex",
+    "hooks"
+  ],
+  "hooks": "./hooks/hooks.json"
+}
