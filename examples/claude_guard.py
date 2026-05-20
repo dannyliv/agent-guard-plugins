@@ -1,6 +1,6 @@
 # Demonstrates the Claude integration: guarded_messages_create wraps Anthropic SDK.
 import os
-os.environ.setdefault("ANTHROPIC_API_KEY", "sk-ant-placeholder-do-not-use")
+os.environ.setdefault("ANTHROPIC_API_KEY", "EXAMPLE_NOT_A_REAL_KEY")
 
 from unittest.mock import MagicMock
 from agent_guard_plugins.integrations.claude import guarded_messages_create
