@@ -164,7 +164,17 @@ def _load(base=None, model_repo=None):
 def _logdb(path: pathlib.Path | None = None) -> sqlite3.Connection:
     if path is None:
         env_path = os.environ.get("AGENT_GUARD_LOG_PATH")
-        path = pathlib.Path(env_path) if env_path else DEFAULT_LOG_PATH
+        if env_path:
+            resolved = pathlib.Path(env_path).resolve()
+            allowed = (pathlib.Path.home() / ".agent-guard").resolve()
+            if resolved != allowed and not str(resolved).startswith(str(allowed) + os.sep):
+                raise ValueError(
+                    f"AGENT_GUARD_LOG_PATH resolves outside ~/.agent-guard/: {resolved}. "
+                    "Set to empty string to disable logging."
+                )
+            path = resolved
+        else:
+            path = DEFAULT_LOG_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path), check_same_thread=False)
     conn.execute("""CREATE TABLE IF NOT EXISTS detections (
