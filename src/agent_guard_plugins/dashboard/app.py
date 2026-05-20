@@ -125,14 +125,11 @@ def main():
     parser = argparse.ArgumentParser(description="Agent Guard detection dashboard")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=5174, type=int)
-    parser.add_argument("--allow-remote", action="store_true",
-                        help="Required to bind to a non-localhost address.")
     args = parser.parse_args()
-    if args.host not in ("127.0.0.1", "localhost") and not args.allow_remote:
+    if args.host not in ("127.0.0.1", "localhost"):
         print(
-            f"WARNING: --host {args.host!r} is not localhost. "
-            "The dashboard is designed for local use only. "
-            "Pass --allow-remote to proceed anyway."
+            f"Error: --host {args.host!r} is not allowed. "
+            "The dashboard is for local use only."
         )
         raise SystemExit(1)
     app = _build_app()
