@@ -98,7 +98,13 @@ function screenViaPython(parts, toolName, web) {
         input: request,
         encoding: "utf8",
         timeout: timeoutMs,
-        env: { ...process.env },
+        env: Object.fromEntries(
+          ["PATH", "HOME", "TMPDIR", "TEMP", "TMP", "LANG", "LC_ALL",
+           "AGENT_GUARD_CLI_HOOK_DISABLED", "AGENT_GUARD_PYTHON",
+           "AGENT_GUARD_OPENCLAW_TIMEOUT_MS", "AGENT_GUARD_LOG_PATH",
+           "AGENT_GUARD_THRESHOLD", "AGENT_GUARD_MODEL", "AGENT_GUARD_BASE",
+           "HF_TOKEN"].filter(k => k in process.env).map(k => [k, process.env[k]])
+        ),
         maxBuffer: 4 * 1024 * 1024,
       },
     );
