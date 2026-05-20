@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import stat
 import sys
 
@@ -118,6 +119,11 @@ def install(codex_home: str | os.PathLike[str] | None = None,
     hooks_dir.mkdir(parents=True, exist_ok=True)
 
     python = python_executable or sys.executable or "python3"
+    if not re.match(r'^[A-Za-z0-9_./ -]+$', python):
+        raise ValueError(
+            f"python_executable {python!r} contains unsafe characters. "
+            "Only letters, digits, dots, underscores, slashes, spaces, and hyphens are allowed."
+        )
     script_path = hooks_dir / "agent-guard-pretooluse.sh"
     script_path.write_text(_HOOK_SCRIPT % {"python": python}, encoding="utf-8")
     script_path.chmod(script_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
