@@ -1,6 +1,6 @@
 # Demonstrates the OpenAI integration: guarded_chat_completions_create wraps OpenAI SDK.
 import os
-os.environ.setdefault("OPENAI_API_KEY", "sk-placeholder-do-not-use")
+os.environ.setdefault("OPENAI_API_KEY", "EXAMPLE_NOT_A_REAL_KEY")
 
 from unittest.mock import MagicMock
 from agent_guard_plugins.integrations.openai_codex import guarded_chat_completions_create
