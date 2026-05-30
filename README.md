@@ -539,3 +539,11 @@ two model cards linked above.
 ## License
 
 Apache-2.0. Plugins, model, and ONNX export all permissive.
+
+## Disclaimer
+
+Agent Guard Plugins is a free and open-source project provided for research and educational purposes only. It is distributed "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement.
+
+Agent Guard Plugins is not a security certification, an audit of record, or a substitute for professional security review. Its checks are heuristic and its results may contain false positives and false negatives; passing it does not guarantee an agent or system is secure.
+
+You are solely responsible for how you use this project and how you act on its output. Do not rely on it as the sole basis for any production, procurement, or trust decision. To the maximum extent permitted by law, the authors and contributors accept no liability for any claim, damages, or other loss arising from use of this project or its results.
